@@ -1,0 +1,74 @@
+<?php
+    session_start(); //mulai session
+
+    //check akses login
+    if( !isset($_POST['email'])){
+        header('location:index.php'); exit();
+    }
+    $error = ''; //nilai default dari error
+
+    require ('koneksi.php');
+    $email = trim($_POST['email']);
+    $pass  = trim($_POST['password']);
+
+    if(strlen($email) < 2)
+    {
+        //validasi email kosong
+        $error = 'Email tidak boleh kosong';
+    }else if( strlen($pass) < 2)
+    {
+        //validasi password kosong
+        $error = 'Password tidak boleh kosong';
+    }else{
+        //merubah semua karakter ke bentuk string
+        $email = $dbcon->escape_string($email);
+        $pass  = $dbcon->escape_string($pass);
+
+        //has dengan md5
+        $pass = md5($pass);
+
+        //sql command untuk memilih data berdasarkan parameter $email dan $pass yang diinputkan
+        $sql = "SELECT username, level FROM administrator
+                WHERE email='$email' AND password='$pass' LIMIT 1";
+
+        //Melakukan perintah sql
+        $query = $dbcon->query($sql);
+
+        //check query
+        if( !query )
+        {
+            die('oops!! sepertinya ada kesalahan database'.$dbcon->error);
+        }
+
+        //check hasil perintah
+        if( $query->num_rows == 1)
+        {
+            //jika data yang dimaksudkan ada maka ditampilkan
+            $row= $query->fetch_assoc();
+
+            //data email disimpan disession browser
+            $_SESSION['email'] = $row['email'];
+            $_SESSION['akses'] = $row['level'];
+
+            if($row['level'] === 'manager')
+            {
+                //data hak admin diset
+                $_SESSION['manager']= 'TRUE';
+            }
+            //menuju halaman sesuai hak akses
+            header('location:'.$url.'/'.$_SESSION['akses'].'/');
+            exit();
+        }else{
+            //jika data yang dimaksud tidak ada
+            $error = '<div class="alert alert-danger" role="alert">Email dan Password Tidak ditemukan </div>';
+        }
+    }
+
+    if(!empty($error))
+    {
+        //simpan error pada session
+        $_SESSION['error'] = $error;
+        header('location:'.$url.'/');
+        exit();
+    }
+    ?>
